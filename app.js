@@ -9,39 +9,47 @@ let linksArray = [];
 const mainViewPath = 'body > table > tbody > tr > td> table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(2) > table:nth-child(8)';
 const annexesPath = 'body > table > tbody > tr > td> table > tbody > tr > td > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(2) > table:nth-child(10)'
 
-// TODO Скачать списки Приложений
+const pdfShiftConfig = {
+    sandbox: true,
+    disable_links: true,
+    margin: {
+        top: 0,
+        right: 0,
+        left: 0,
+        bottom: 0
+    },
+    zoom: 1.2
+}
 
 axios.get(contentURL, {responseType: "arraybuffer"})
     .then((response) => {
         const decodedResponse = new TextDecoder('windows-1251').decode(response.data);
         let $ = cheerio.load(decodedResponse);
-        const mainViewElement = $(mainViewPath).html();
-        //const annexesViewElement = $(annexesPath).html();
 
-        $ = cheerio.load(mainViewElement); // $ - основное содержание
-        //$ = cheerio.load(annexesViewElement); // $ - приложения
-        //fs.writeFileSync('./response.txt', $.html());
+        //$ = cheerio.load($(mainViewPath).html()); // $ - основное содержание
+        $ = cheerio.load($(annexesPath).html()); // $ - приложения
+        fs.writeFileSync('./response.txt', $.html());
 
         /**
          * Заполнение массива ссылками на статьи
          */
-        for(let i = 0; i < 149; i++) {
-            linksArray.push($('a')[i]);
-        }
-
-        /*for(let i = 0; i < 17; i++) {
+        /*for(let i = 0; i < 149; i++) {
             linksArray.push($('a')[i]);
         }*/
 
-        //console.log($('a').length)
+        for(let i = 0; i < 17; i++) {
+            linksArray.push($('a')[i]);
+        }
 
-        getPDFpage();
+        console.log(linksArray[1].attribs.href);
+        console.log(linksArray[1].children[0].data);
+        //getPDFpageEmit();
     })
     .catch(function(err){
         console.error(err)
     });
 
-function getPDFpage() {
+function getPDFpageEmit() {
     console.log('Creating...')
     linksArray.forEach((link, index) => {
         setTimeout(() => {
@@ -51,17 +59,7 @@ function getPDFpage() {
 }
 
 function getPdfApi(link, index) {
-    pdfShift.convert(templateURL + link.attribs.href, {
-            sandbox: true,
-            disable_links: true,
-            margin: {
-                top: 0,
-                right: 0,
-                left: 0,
-                bottom: 0
-            },
-            zoom: 1.2
-        })
+    pdfShift.convert(templateURL + link.attribs.href, pdfShiftConfig)
         .then((binaryResponse) => {
             fs.writeFile(`./config/${index + 1}. ${link.children[0].data}.pdf`, binaryResponse, {encoding: "binary"}, () => {
                 console.log(`File \"${index + 1}. ${link.children[0].data}.pdf\" was created!`);
